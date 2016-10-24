@@ -1,0 +1,165 @@
+---
+title: "lab7"
+author: "Bowen_Yao"
+date: "2016/10/3"
+output: html_document
+---
+
+#Single variable non-linear method
+Linear model to predict wage using age
+```{r}
+library(ISLR)
+attach(Wage)
+fit=lm(wage~poly(age,degree=4,raw=T),data=Wage)
+coef(summary(fit))
+```
+
+Predict and boundaries
+```{r}
+agelims=range(age)
+age.grid=seq(from=agelims[1],to=agelims[2])
+preds=predict(fit,newdata=list(age=age.grid),se=T)
+se.bands=cbind(preds$fit+2*preds$se.fit,preds$fit-2*preds$se.fit)
+```
+
+Plot
+```{r}
+plot(age,wage,xlim=agelims,col="darkgrey")
+title("Degree -4 Polynomial", out=T)
+lines(age.grid,preds$fit,lwd=2,col="blue")
+matlines(age.grid,se.bands,lwd=1,col="blue",lty=3)
+```
+
+Use ANOVA to determine the degree of the poly to use.
+```{r}
+fit.1=lm(wage~age,data=Wage)
+fit.2=lm(wage~poly(age,2),data=Wage)
+fit.3=lm(wage~poly(age,3),data=Wage)
+fit.4=lm(wage~poly(age,4),data=Wage)
+fit.5=lm(wage~poly(age,5),data=Wage)
+anova(fit.1,fit.2,fit.3,fit.4,fit.5)
+```
+
+Logistic Regression to predict whether wage>250 using age
+```{r}
+fit=glm(I(wage>250)~poly(age,4),data=Wage,family=binomial)
+preds=predict(fit,newdata=list(age=age.grid),se=T)
+pfit=exp(preds$fit)/(1+exp(preds$fit))
+se.bands.logit=cbind(preds$fit+2*preds$se.fit,preds$fit-2*preds$se.fit)
+se.bands=exp(se.bands.logit)/(1+exp(se.bands.logit))
+```
+
+Plot
+```{r}
+plot(age,I(wage>250),xlim=agelims,type="n",tylim=c(0,.2))
+points(jitter(age),I((wage>250)/5),cex=0.5,pch="|",col="darkgrey")
+lines(age.grid,pfit,lwd=2,col="blue")
+matlines(age.grid,se.bands,lwd=1,col="blue",lty=3)
+```
+
+Use step function to predict wage using age
+```{r}
+chunck=cut(age,4)
+table(chunck)
+fit=lm(wage~chunck,data=Wage)
+newChuck=cut(age.grid,4)
+preds=predict(fit,newdata = list(chunck=newChuck),se=T)
+se.bounds=cbind(preds$fit+2*preds$se.fit,preds$fit-2*preds$se.fit)
+```
+
+Plot
+```{r}
+plot(age,wage,xlim=agelims,col="darkgrey")
+lines(age.grid,preds$fit,lwd=2,col="blue")
+matlines(age.grid,se.bounds,lwd=1,col="blue",lty=3)
+```
+
+Use splines to predict wage using age
+```{r}
+library(splines)
+fit=lm(wage~bs(age,knots=c(25,40,60)),data=Wage)
+preds=predict(fit,newdata=list(age=age.grid),se=T)
+se.bounds=cbind(preds$fit+2*preds$se.fit,preds$fit-2*preds$se.fit)
+```
+
+Plot
+```{r}
+plot(age,wage,xlim=agelims,col="darkgrey")
+lines(age.grid,preds$fit,lwd=2,col="blue")
+matlines(age.grid,se.bounds,lwd=1,col="blue",lty=3)
+```
+
+Use nature splines to predict wage using age
+```{r}
+fit=lm(wage~ns(age,df=6),data=Wage)
+preds=predict(fit,newdata=list(age=age.grid),se=T)
+se.bounds=cbind(preds$fit+2*preds$se.fit,preds$fit-2*preds$se.fit)
+```
+
+Plot
+```{r}
+plot(age,wage,xlim=agelims,col="darkgrey")
+lines(age.grid,preds$fit,lwd=2,col="blue")
+matlines(age.grid,se.bounds,lwd=1,col="blue",lty=3)
+```
+
+Use smoothing splines to predict wage using age
+```{r}
+fit=smooth.spline(age,wage,df=16)
+fit2=smooth.spline(age,wage,cv=T)
+fit2$df
+preds=predict(fit,newdata=list(age=age.grid),se=T)
+```
+
+Plot
+```{r}
+plot(age,wage,xlim=agelims,col="darkgrey")
+#lines(age.grid[2:62],preds$y,col="red",lwd=2)
+lines(fit,col="red",lwd=2)
+lines(fit2,col="blue",lwd=2)
+legend("topright",legend=c("DF 16","CV: DF 6.8"),col=c("red","blue"),lty=1,lwd=2,cex=0.8)
+```
+
+Use local regression to predict wage using age
+```{r}
+fit=loess(wage~age,span=0.2,data=Wage)
+fit2=loess(wage~age,span=0.5,data=Wage)
+preds=predict(fit,data.frame(age=age.grid))
+preds2=predict(fit2,data.frame(age=age.grid))
+```
+
+Plot
+```{r}
+plot(age,wage,xlim=agelims,col="darkgrey")
+lines(age.grid,preds,col="red",lwd=2)
+lines(age.grid,preds2,col="blue",lwd=2)
+legend("topright",legend=c("Span=0.2","Span=0.5"),col=c("red","blue"),lty=1,lwd=2,cex=0.8)
+```
+
+#Multivariate non-linear method--Generalized Additive Model
+
+###If all of the single variable models can be expressed using a basis functions
+```{r}
+gam1=lm(wage~ns(year,df=4)+bs(age,df=5)+education,data=Wage)
+```
+
+###If not, such as smoothing splines, we need the gam library
+```{r}
+library(gam)
+gam2=gam(wage~s(year,4)+s(age,5)+education,data=Wage)
+gam3=gam(wage~s(year,4)+lo(age,span=0.7)+education,data=Wage)
+gam4=gam(I(wage>250)~s(year,4)+lo(age,span=0.7)+education,family=binomial,data=Wage)
+par(mfrow=c(1,3))
+plot.gam(gam1,se=T,col="blue")
+plot.gam(gam2,se=T,col="red")
+plot.gam(gam3,se=T,col="green")
+plot.gam(gam3,se=T,col="grey")
+```
+
+We can also include interaction using local weighted regression:
+```{r}
+gam.i=gam(wage~lo(year,age,span=0.5)+education,data=Wage)
+library(akima)
+plot(gam.i)
+```
+

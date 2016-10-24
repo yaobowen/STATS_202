@@ -1,0 +1,70 @@
+---
+output: pdf_document
+---
+Problem 5:
+a)
+```{r}
+college=read.csv("College.csv")
+```
+
+b)
+```{r}
+rownames(college)=college[,1]
+fix(college)
+
+college=college[,-1]
+fix(college)
+```
+
+c) 
+i.
+```{r}
+summary(college)
+```
+ii.
+```{r}
+pairs(college[,1:10])
+```
+
+iii.
+```{r}
+boxplot(Outstate~Private,data=college)
+```
+
+iv.
+```{r}
+Elite=rep("No",nrow(college))
+Elite[college$Top10perc>50]="Yes"
+Elite=as.factor(Elite)
+college=data.frame(college,Elite)
+summary(college$Elite)
+boxplot(Outstate~Elite,data=college)
+```
+
+v.
+```{r}
+par(mfrow=c(2,3))
+hist(college$Apps,breaks=5,xlab='Number of applications recieved',ylab='Number of universities')
+hist(college$Apps,breaks=10,xlab='Number of applications recieved',ylab='Number of universities')
+hist(college$Apps,breaks=20,xlab='Number of applications recieved',ylab='Number of universities')
+hist(college$PhD,breaks=5,xlab='Percent of faculty with Ph.D.\'s',ylab='Number of universities')
+hist(college$PhD,breaks=10,xlab='Percent of faculty with Ph.D.\'s',ylab='Number of universities')
+hist(college$PhD,breaks=20,xlab='Percent of faculty with Ph.D.\'s',ylab='Number of universities')
+```
+
+vi.
+The following 3 boxplots show that private university is generally more expensive to attend(high out-of-state tuition and room & board cost). And at the same time, students in private universities are spending less on there personal spending, probably because that the high expense of attending school has already shrinked their wallet.
+```{r}
+boxplot(Outstate~Private,data=college,xlab="Is Private?",ylab="Out-of-state tuition")
+boxplot(Room.Board~Private,data=college,xlab="Is Private?",ylab="Room & board cost")
+boxplot(Personal~Private,data=college,xlab="Is Private?",ylab="Estimated personal spending")
+```
+
+The following 2 boxplots show that private universities are indeed put into good use of their higher tuition to provide the students with better learning environment, including a higher faculty/student ratio and a higher instructional expenditure per student. Therefore, my advice is, if you can afford a private university, then go to one. Because it's probably worth the money.
+```{r}
+boxplot(1/S.F.Ratio~Private,data=college,xlab="Is Private?",ylab="Faculty/student ratio")
+boxplot(Expend~Private,data=college,xlab="Is Private?",ylab="Instructional expenditure per student")
+```
+
+
+

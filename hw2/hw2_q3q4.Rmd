@@ -1,0 +1,99 @@
+---
+output: pdf_document
+---
+#Problem 3
+a)
+```{r}
+hclust.complete=hclust(dist(USArrests),method='complete')
+plot(hclust.complete)
+```
+b)
+```{r}
+re1=cutree(hclust.complete,3)
+re1
+```
+c)
+```{r}
+hclust.complete.sc=hclust(dist(scale(USArrests)),method='complete')
+plot(hclust.complete.sc)
+re2=cutree(hclust.complete.sc,3)
+re2
+```
+
+d)
+```{r}
+table(re1,re2)
+```
+Scaling the variables indeed has effect on the output clusters. But the trees are still similar. We should scale the varibles in order to unify the data's measure.
+
+#Problem 4
+a)
+```{r}
+set.seed(2)
+data=matrix(0,ncol=50,nrow=60)
+for(i in 1:20)
+{
+  data[i,]=rnorm(50,mean=1,sd=i/10)
+}
+for(i in 21:40)
+{
+  data[i,]=rnorm(50,mean=2,sd=(i-20)/10)
+}
+for(i in 41:60)
+{
+  data[i,]=rnorm(50,mean=3,sd=(i-40)/10 )
+}
+```
+
+b)
+```{r}
+pca=prcomp(data,scale=T)
+first_comp=(pca$x)[,1]
+second_comp=(pca$x)[,2]
+plot(first_comp,second_comp,col=c(rep(1,20),rep(2,20),rep(3,20)),xlab='First Component',ylab='Second Component' )
+```
+
+c)
+```{r}
+set.seed(2)
+km=kmeans(data,3,nstart=30)
+vec_true_label=c(rep(1,20),rep(2,20),rep(3,20))
+table(km$cluster,as.factor(vec_true_label) )
+```
+K-means is doing a really nice job in clustering the observations with only two wrong label.
+
+d)
+```{r}
+set.seed(2)
+km=kmeans(data,2, nstart=30 )
+vec_true_label=c(rep(1,20),rep(2,20),rep(3,20))
+table(km$cluster,as.factor(vec_true_label) )
+```
+K-means successfully seperates the true class 3 from the others while failing to seperate class 2 and 3 . That is it forms a cluster that consists of all 20 observations from class 3 and 2 observation from class 2. And all 20 observations in class 3 and 18 observations in class 2 got clustered together.
+
+e)
+```{r}
+set.seed(2)
+km=kmeans(data,4, nstart=30 )
+vec_true_label=c(rep(1,20),rep(2,20),rep(3,20))
+table(km$cluster,as.factor(vec_true_label) )
+```
+K-means almost successfully seperates the 3 true class. And it also constructs a cluster with only 1 observation in it.
+
+f)
+```{r}
+set.seed(2)
+km=kmeans(cbind(first_comp,second_comp),3, nstart=30 )
+vec_true_label=c(rep(1,20),rep(2,20),rep(3,20))
+table(km$cluster,as.factor(vec_true_label) )
+```
+Even with only 2 principle components, K-means is doing a really nice job in clustering the observations with only two wrong label. This shows that the first 2 principle components capture most of the information in the raw data.
+
+g)
+```{r}
+set.seed(2)
+km=kmeans(scale(data),3,nstart=30)
+vec_true_label=c(rep(1,20),rep(2,20),rep(3,20))
+table(km$cluster,as.factor(vec_true_label) )
+```
+The result is slightly better with only 1 wrong label. This is because scaling the data gives each variable equally impact on the output of the model. This enhances the model's robustness against rare randomly-generated outliers in the observations.

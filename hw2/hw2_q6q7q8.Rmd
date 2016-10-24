@@ -1,0 +1,142 @@
+---
+output: pdf_document
+---
+#Problem6
+a)
+```{r}
+library(ISLR)
+plot(Auto)
+```
+
+b)
+```{r}
+cor(Auto[1:8])
+```
+
+c)
+```{r}
+lm.auto=lm(mpg~.-name,data=Auto)
+summary(lm.auto)
+```
+1.The whole model has a p value less than 2.2e-16, therefore there must be some predictors that have relationship with the response.
+
+2.displacement,weight, year, origin have statistically significant relationship with the response.
+
+3.The coefficient of year suggests that if the average effect of year goes up 1 is that mpg will go up by 0.75.
+
+d)
+```{r}
+plot(lm.auto)
+```
+1.point 323, 326, 327 are unusually large outliers
+
+2.point 14 has unusually large leverage
+
+3.Accoring to the normal q-q plot, the residule is not nicely normal-distributed, it is somewhat right-skewed.
+
+#Problem 7
+a)
+```{r}
+set.seed(1)
+x1=runif(100)
+x2=0.5*x1+rnorm(100)/10
+y=2+2*x1+0.3*x2+rnorm(100)
+```
+
+The linear model is: $$y=\beta_0+\beta_1x_1+\beta_2x_2+\epsilon$$
+The coefficients are: $$\beta_0=2, \beta_1=2, \beta_2=0.3$$
+
+b)
+```{r}
+cor(x1,x2)
+plot(x1,x2)
+```
+
+c)
+```{r}
+lm.out1<-lm(y~x1+x2)
+summary(lm.out1)
+```
+
+The estimators are:
+$$\hat{\beta_0}=2.1305, \hat{\beta_1}=1.4396, \hat{\beta_2}=1.0097$$
+The $\beta_0$ is almost accurate but $\beta_1$ and $\beta_2$ are not.
+We can reject the null hypothesis $H_0: \beta_1=0$ but we cannot reject the null hypothesis $H_0: \beta_2=0$
+
+d)
+```{r}
+lm.out2<-lm(y~x1)
+summary(lm.out2)
+```
+Yes, we can reject the null hypothesis $H_0: \beta_1=0$
+
+e)
+```{r}
+lm.out3<-lm(y~x2)
+summary(lm.out3)
+```
+Yes, we can reject the null hypothesis $H_0: \beta_2=0$
+
+f)
+No, they don't. This is because in c), the fact that we can not reject $H_0: \beta_2=0$ is in the presence one x1. What it means is that in the presence of x1, x2 provides no statistically significant additional information about y. While d) and e) say that x1 or x2 alone provide statistically information about y. 
+
+The reason why this is happening is that x1 and x2 are highly correlated. We have collinearity. Collinearity reduces the accuracy of the estimates of the regression coefficients.
+
+g)
+```{r}
+x1=c(x1,0.1)
+x2=c(x2,0.8)
+y=c(y,6)
+lm.out1<-lm(y~x1+x2)
+summary(lm.out1)
+plot(lm.out1)
+lm.out2<-lm(y~x1)
+summary(lm.out2)
+plot(lm.out2)
+lm.out3<-lm(y~x2)
+summary(lm.out3)
+plot(lm.out3)
+```
+This point is a high-leverage point in the model with both x1 and x2; it is both an outlier and a high-leverage point in the model with only x1; it is a high-leverage point in the model with only x2.
+
+#Problem 8
+a)
+```{r results='hide'}
+library(MASS)
+attach(Boston)
+name=names(Boston)
+single_coef=rep(0,13)
+for(i in 2:14)
+{
+  print(paste('result for ',name[i],sep=''))
+  lm.fit=lm(crim~Boston[,i],data=Boston)
+  print(summary(lm.fit))
+  single_coef[i-1]=lm.fit$coefficients[2]
+}
+```
+zn, indus, nox, rm, age, dis, rad, tax, ptratio, black, lstat, medv have statistically significant association with crim.
+
+b)
+```{r,results='hide'}
+lm.fit=lm(crim~.,data=Boston)
+summary(lm.fit)
+multiple_coef=lm.fit$coefficients[2:14]
+```
+For zn, dis, rad,black and medv, we can reject the null hypothesis $H_0 : \beta_j = 0$
+
+c)
+Some of the predictors that are previously significant in a) are no-longer significant in b)
+```{r}
+plot(x=single_coef,y=multiple_coef)
+```
+
+d)
+```{r, results='hide'}
+for(i in c(2:14))
+{
+  print(paste('result for ',name[i],sep=''))
+  lm.fit=lm(crim~poly(Boston[,i],3,raw=T),data=Boston)
+  print(summary(lm.fit))
+}
+```
+For indus, nox, age, dis, ptratio, medv, they have non-linear association with the response crim.

@@ -1,0 +1,216 @@
+---
+output: pdf_document
+---
+#Problem 5
+(a)
+```{r}
+library(ISLR)
+summary(Weekly)
+plot(Weekly)
+```
+No obvious pattern can be discovered except that volume becomes bigger year by year.
+
+(b)
+```{r}
+attach(Weekly)
+logit.out=glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume,data=Weekly,family=binomial)
+summary(logit.out)
+```
+Lag2 is statistically significant
+
+(c)
+```{r}
+logit.prob=predict(logit.out,type='response')
+logit.predict=rep('Down',length(Direction))
+logit.predict[logit.prob>0.5]='Up'
+table(logit.predict,Direction)
+```
+If predicting 'Up' is positive, then the logistic has a false positive rate of $\frac{430}{430+54}=0.888$ and a false negative rate of $\frac{48}{48+557}=0.079$
+
+(d)
+```{r}
+training=Weekly[Year>=1990 & Year<=2008,]
+test=Weekly[Year<1990 | Year>2008,]
+logit.out2=glm(Direction~Lag2,data=training,family=binomial)
+logit.predict2=predict(logit.out2,newdata=test,type='response')
+logit.prob2=rep('Down',dim(test)[1])
+logit.prob2[logit.predict2>0.5]='Up'
+table(logit.prob2,test$Direction)
+(9+56)/(9+5+34+56)
+```
+The overall fraction of correct predictions for the held out data is 62.5%
+
+(e)
+```{r}
+library(MASS)
+lda.out=lda(Direction~Lag2,data=training)
+lda.predict=predict(lda.out,newdata=test)
+table(lda.predict$class,test$Direction)
+(9+56)/(9+5+34+56)
+```
+The overall fraction of correct predictions for the held out data is 62.5%
+
+(f)
+```{r}
+qda.out=qda(Direction~Lag2,data=training)
+qda.predict=predict(qda.out,newdata=test)
+table(qda.predict$class,test$Direction)
+(61)/(61+43)
+```
+The overall fraction of correct predictions for the held out data is 58.65%
+
+(g)
+```{r}
+library(class)
+knn.out=knn(data.frame(scale(training$Lag2)),data.frame(scale(test$Lag2)),training$Direction,k=1)
+table(knn.out,test$Direction)
+(14+36)/(14+25+29+36)
+```
+The overall fraction of correct predictions for the held out data is 48.08%
+
+(h)
+LDA and Logistic regression
+
+(i)
+We begin with the null model: Direction~Lag2 and try to add interactions between Lag2 and other predictors one at a time.
+```{r}
+lda.fit = lda(Direction ~ Lag2+Lag2:Lag1, data = training)
+lda.pred = predict(lda.fit, newdata = test)
+mean(lda.pred$class == test$Direction)
+```
+
+```{r}
+lda.fit = lda(Direction ~ Lag2+Lag2:Lag3, data = training)
+lda.pred = predict(lda.fit, newdata = test)
+mean(lda.pred$class == test$Direction)
+```
+
+```{r}
+lda.fit = lda(Direction ~ Lag2+Lag2:Lag4, data = training)
+lda.pred = predict(lda.fit, newdata = test)
+mean(lda.pred$class == test$Direction)
+```
+
+```{r}
+lda.fit = lda(Direction ~ Lag2+Lag2:Lag5, data = training)
+lda.pred = predict(lda.fit, newdata = test)
+mean(lda.pred$class == test$Direction)
+```
+
+```{r}
+lda.fit = lda(Direction ~ Lag2+Lag2:Year, data = training)
+lda.pred = predict(lda.fit, newdata = test)
+mean(lda.pred$class == test$Direction)
+```
+
+```{r}
+lda.fit = lda(Direction ~ Lag2+Lag2:Volume, data = training)
+lda.pred = predict(lda.fit, newdata = test)
+mean(lda.pred$class == test$Direction)
+```
+
+According to the result, it seems that we will add the interaction of Lag2 and Lag5 to the null model Direction~Lag2. Then we examine if there is any other interactions that is worth adding.
+
+```{r}
+lda.fit = lda(Direction ~ Lag2+Lag2:Lag5+Lag2:Lag1, data = training)
+lda.pred = predict(lda.fit, newdata = test)
+mean(lda.pred$class == test$Direction)
+```
+
+```{r}
+lda.fit = lda(Direction ~ Lag2+Lag2:Lag1+Lag2:Lag3, data = training)
+lda.pred = predict(lda.fit, newdata = test)
+mean(lda.pred$class == test$Direction)
+```
+
+```{r}
+lda.fit = lda(Direction ~ Lag2+Lag2:Lag1+Lag2:Volume, data = training)
+lda.pred = predict(lda.fit, newdata = test)
+mean(lda.pred$class == test$Direction)
+```
+
+```{r}
+lda.fit = lda(Direction ~ Lag2+Lag2:Lag1+Lag2:Year, data = training)
+lda.pred = predict(lda.fit, newdata = test)
+mean(lda.pred$class == test$Direction)
+```
+
+
+```{r}
+lda.fit = lda(Direction ~ Lag2+Lag2:Lag1+Lag2:Lag3, data = training)
+lda.pred = predict(lda.fit, newdata = test)
+mean(lda.pred$class == test$Direction)
+```
+
+As can be seen, none of those models above can further decrease the test error, so we stop selection and end up having the model: Direction ~ Lag2 + Lag2:Lag5
+
+#Problem 6
+(a)
+```{r}
+attach(Auto)
+mpg01=rep(0,length(mpg))
+mpg01[mpg>median(mpg)]=1
+mydata=data.frame(Auto[,-1],mpg01)
+```
+
+(b)
+```{r}
+plot(mydata)
+n=names(mydata)
+par(mfrow=c(2,4))
+for(i in 1:7)
+{
+  boxplot(mydata[,i]~mpg01,ylab=n[i])
+}
+```
+displacement,horsepower,weight,acceleration seems to be most useful
+
+(c)
+```{r}
+set.seed(1)
+rsample=sample(1:length(mpg01),size=length(mpg01)/2)
+train=mydata[rsample,]
+test=mydata[-rsample,]
+```
+
+(d)
+```{r}
+lda.fit=lda(mpg01~displacement+horsepower+weight+acceleration,data=train)
+lda.predict=predict(lda.fit,newdata=test)
+table(lda.predict$class,test$mpg01)
+(7+15)/(85+7+15+89)
+```
+The model's test error rate is 11.22%
+
+(e)
+```{r}
+qda.fit=qda(mpg01~displacement+horsepower+weight+acceleration,data=train)
+qda.predict=predict(qda.fit,newdata=test)
+table(qda.predict$class,test$mpg01)
+(7+10)/(90+7+10+89)
+```
+The model's test error rate is 8.67%
+
+(f)
+```{r}
+logit.fit=glm(mpg01~displacement+horsepower+weight+acceleration,data=train,family=binomial)
+logit.prob=predict(logit.fit,newdata=test,type='response')
+logit.predict=rep(0,length(test$mpg01))
+logit.predict[logit.prob>0.5]=1
+table(logit.predict,test$mpg01)
+(12+12)/(88+12+12+84)
+```
+The model's test error rate is 12.24%
+
+(g)
+```{r}
+vec_error_rate=rep(0,15)
+par(mfrow=c(1,1))
+for (k in 1:15){
+knn.fit=knn(train[2:5],test[2:5],train$mpg01,k)
+vec_error_rate[k]=sum(knn.fit!=test$mpg01)/length(test$mpg01)
+}
+plot(vec_error_rate,xlab='K',ylab='error rate',main='Error rate V.S. the value of K',type='l')
+```
+$K=6$ or $K=7$ seems to perform the best on this data set because they have good result and they
+

@@ -1,0 +1,135 @@
+---
+title: "Lab8"
+author: "Bowen_Yao"
+date: "2016/10/3"
+output: html_document
+---
+
+#Tree method for classification
+Use tree library to predict whether sales is high in the Carseats dataset
+```{r}
+library(tree)
+library(ISLR)
+attach(Carseats)
+High=ifelse(Sales<=8,"No","Yes")
+Carseats=data.frame(Carseats,High)
+tree.carseats=tree(High~.-Sales,data=Carseats)
+summary(tree.carseats)
+plot(tree.carseats)
+text(tree.carseats)
+```
+
+Now we randomly split the data into two and test the model
+```{r}
+set.seed(2)
+train=sample(1:nrow(Carseats),200)
+Carseats.test=Carseats[-train,]
+High.test=High[-train]
+tree.carseats=tree(High~.-Sales,data=Carseats,subset=train)
+tree.pred=predict(tree.carseats,Carseats.test,type="class")
+table(tree.pred,High.test)
+```
+
+Now we use cv.tree() to truncate the tree
+```{r}
+set.seed(3)
+cv.carseats= cv.tree(tree.carseats,FUN=prune.misclass)
+cv.carseats
+```
+
+We can plot the error rate versus tree size and k
+```{r}
+par(mfrow=c(1,2))
+plot(cv.carseats$k,cv.carseats$dev,type="b")
+plot(cv.carseats$size,cv.carseats$dev,type="b")
+```
+
+Then we can call the prune.class function to get the best subtree
+```{r}
+par(mfrow=c(1,1))
+prune.carseats=prune.misclass(tree.carseats,best=9)
+plot(prune.carseats)
+text(prune.carseats)
+tree.pred=predict(prune.carseats,Carseats.test,type="class")
+table(tree.pred,High.test)
+```
+
+#Tree method for regression
+Basic tree method
+```{r}
+library(MASS)
+set.seed(1)
+train=sample(1:nrow(Boston),nrow(Boston)/2)
+tree.boston=tree(medv~.,data=Boston,subset=train)
+summary(tree.boston)
+plot(tree.boston)
+text(tree.boston)
+tree.pred=predict(tree.boston,newdata=Boston[-train,])
+boston.test=Boston[-train,"medv"]
+mean((tree.pred-boston.test)^2)
+```
+
+Now use prune to see if it improves
+```{r}
+cv.boston=cv.tree(tree.boston)
+cv.boston
+```
+8 nodes is selected, so we do not trunc the tree
+
+#Bagging & Random forest
+We need to use randomForest library 
+Bagging
+```{r}
+library(randomForest)
+set.seed(1)
+bag.boston=randomForest::randomForest(medv~.,data=Boston,subset=train,mtry=13,importance=T,ntree=100)
+bag.boston
+pred.bag=predict(bag.boston,newdata=Boston[-train,])
+plot(pred.bag,boston.test)
+abline(0,1)
+mean((pred.bag-boston.test)^2)
+```
+
+Random Forest(only change mtry)
+```{r}
+library(randomForest)
+set.seed(1)
+rf.boston=randomForest::randomForest(medv~.,data=Boston,subset=train,mtry=6,importance=T,ntree=100)
+rf.boston
+pred.bag=predict(rf.boston,newdata=Boston[-train,])
+plot(pred.bag,boston.test)
+abline(0,1)
+mean((pred.bag-boston.test)^2)
+importance(rf.boston)
+varImpPlot(rf.boston)
+```
+
+#Boosting
+We need to use the gbm function within the gbm library
+```{r}
+library(gbm)
+set.seed(1)
+boost.boston=gbm(medv~.,data=Boston[train,],distribution="gaussian",n.trees=5000,interaction.depth=4)
+summary(boost.boston)
+```
+
+Then we can plot the partial dependence plot
+```{r}
+par(mfrow=c(1,2))
+plot(boost.boston,i="rm")
+plot(boost.boston,i="lstat")
+```
+
+Then we do prediction
+```{r}
+pred.boost=predict(boost.boston,newdata=Boston[-train,],n.trees = 5000)
+mean((pred.boost-boston.test)^2)
+```
+
+We can also use difference shrinkage lambda
+```{r}
+boost.boston=gbm(medv~.,data=Boston[train,],distribution="gaussian",n.trees=5000,interaction.depth=4,shrinkage=0.2)
+pred.boost=predict(boost.boston,newdata=Boston[-train,],n.trees = 5000)
+mean((pred.boost-boston.test)^2)
+```
+
